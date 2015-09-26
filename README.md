@@ -1,2 +1,2 @@
-# Laser_image_engrave_converter
-generate gcode from jpegpng,bmp with JavaScript
+# convert a image to gcode for Laser-engrave
+generate gcode from jpeg,png,bmp with JavaScript
