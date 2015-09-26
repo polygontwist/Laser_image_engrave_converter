@@ -1,0 +1,42 @@
+body{
+	font-family:Verdana;
+	}
+h1{
+	font-size:12pt;
+	}
+ 
+#outPutDoc{
+		background-color:#ccc;
+		font-family:monospace;
+		height:300px;
+		overflow:auto;
+		width:400px;
+}
+ 
+#makeButt{
+	color:#000;
+	text-decoration:none;
+	background-color:#ccc;
+	padding:5px 10px;
+	-webkit-border-radius: 5px;
+	border-radius:5px;
+	text-decoration:none;
+	-webkit-user-select: none;
+   -ms-user-select: none;
+	user-select: none;
+}
+#makeButt:hover{
+	background-color:#ddd;
+}
+ 
+#outputcanvas{
+	display:block;
+}
+ 
+.unsichtbar{display:none;}
+ 
+#input_Width,
+#input_Height{
+	width:50px;
+ 
+}
