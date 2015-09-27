@@ -58,6 +58,8 @@ var akPicToLaser=function(zielID){
 		else
 			return false;
 	}
+	var maF=function(r){return Math.floor(r*1000)/1000;}
+	var maR=function(r){return Math.round(r);}
  
 	//--var--
 	var inputFile;
@@ -67,7 +69,7 @@ var akPicToLaser=function(zielID){
 	var makeButt;
 	var pauseButt;
  
-	var input_Width;
+	var input_Width=undefined;
 	var input_Height;
  
 	var objektdata={
@@ -75,109 +77,137 @@ var akPicToLaser=function(zielID){
 		height:1,
 		unit:"mm",
 		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand --> 203,2dpi
-		dpi:75		//Punkte pro Zoll = 2,54cm
+		dpi:75		 //Punkte pro Zoll = Punkte pro 2,54cm
 	}
  
 	var pause=false;
 	//
-	this.ini=function(){
+	
+	var ini=function(){
 		var html,p;
- 
 		p=cE(ziel,"p");
+		p.innerHTML="Bitte Datei wählen: ";
 		inputFile=cE(p,"input","inputFile");
 		inputFile.type="file";
 		inputFile.accept="image/*;capture=camera";
 		inputFile.size="50";//MB
 		inputFile.onchange=handleFile;
- 
- 
+		
 		inputimage=cE(ziel,"img","inputimage");
 		inputimage.onload=prework;
 		addClass(inputimage,"unsichtbar");
- 
-		p=cE(ziel,"p");
-		p.innerHTML="Lasern in einer Größe von "
-		//input_Width=gE("input_Width");
- 
- 
+		
+		p=cE(ziel,"p","setdaten");
+		addClass(p,"unsichtbar");
+		p.innerHTML="Lasern in einer Größe von ";
+		
+		
 		input_Width=cE(p,"input","input_Width");
+		input_Width.name="input_Width";
 		input_Width.type="number";
+		input_Width.step="any";
 		input_Width.min=1;
 		input_Width.max=500;
 		input_Width.placeholder ="in mm";
 		input_Width.setAttribute("value",objektdata.width);
-		input_Width.onchange=changeInput;
-		console.log(gE("input_Width")); //
-		input_Width.addEventListener("change",changeInput,true)
- 
+		
 		p.innerHTML+=" * ";
- 
-		//input_Height=gE("input_Height");
+		
 		input_Height=cE(p,"input","input_Height");
+		input_Height.name="input_Height";
+		input_Height.step="any";
 		input_Height.type="number";
 		input_Height.placeholder ="in "+objektdata.unit;
 		input_Height.min=1;
 		input_Height.max=500;
 		input_Height.setAttribute("value",objektdata.height);
- 
- 
-		p.innerHTML+=" (Breite * Höhe in "+objektdata.unit+")";
- 
+									
+		p.innerHTML+=" (Breite * Höhe in "+objektdata.unit+") ";
+		
+		html=cE(p,"a");
+		html.href="#";
+		html.onclick=setNewSize;
+		html.innerHTML="set new size";
+		html.className="Button";
+		
+		
 		p=cE(ziel,"p");
 		outputcanvas=cE(p,"canvas","outputcanvas");
- 
+		
 		p=cE(ziel,"p");
 		makeButt=cE(p,"a","makeButt");
+		makeButt.className="Button";
 		makeButt.href="#";
 		makeButt.onclick=function(){ konvertiere(); return false;}
 		makeButt.innerHTML="konvertiere";
 		addClass(makeButt,"unsichtbar");
  
 		p=cE(ziel,"p");
-		pauseButt=cE(p,"a","makeButt");
+		pauseButt=cE(p,"a","pauseButt");
 		pauseButt.href="#";
+		pauseButt.className="Button";
 		pauseButt.onclick=function(){ pause=true; return false;}
 		pauseButt.innerHTML="stopp";
 		addClass(pauseButt,"unsichtbar");
- 
+		
 		outPutDoc=cE(ziel,"textarea","outPutDoc");
- 
+ 		addClass(outPutDoc,"unsichtbar");
 	}
- 
-	var changeInput=function(){
-		console.log(">>",this);
-	}
- 
+	
+	
 	var loadImage=function(ifile){
 		inputimage.src = URL.createObjectURL(ifile);
 	}
  
 	var prework=function(){
-		console.log("prework",this);
- 
-		var c,cc,bb,hh,imgd,pix,v,r,g,b,d,x,y;
+		var c;
 		var dpi=objektdata.dpi;//Punkte pro Zoll = 2,54cm
- 
-		//objektdata.dpi
-		console.log("bildsize:",this.width,"x",this.height);
-		objektdata.width	=this.width /dpi*2.54*10;
+		
+ 		objektdata.width	=this.width /dpi*2.54*10;
 		objektdata.height	=this.height/dpi*2.54*10;
  
-		gE("input_Width").setAttribute("value",Math.round(objektdata.width));
-		gE("input_Height").setAttribute("value",Math.round(objektdata.height));
+		e=gE("input_Width");
+		e.value=maF(objektdata.width);
+		
+		e=gE("input_Height");
+		e.value=maF(objektdata.height);
+
+		c=gE("setdaten");
+		subClass(c,"unsichtbar");
+		
+		preWorkPicture();
+	}
+	
+ 	var setNewSize=function(e){
+		var e;
+		e=gE("input_Width");
+ 		objektdata.width	=e.value;
+		e=gE("input_Height");
+		objektdata.height	=e.value;
+
+		preWorkPicture();
+		
+		subClass(makeButt,"unsichtbar");
+		addClass(pauseButt,"unsichtbar");
+		
+	}
+	
+
+	var preWorkPicture=function(){		
+		var c,cc,bb,hh,imgd,pix,v,r,g,b,d,x,y,e;
+		var dpi=objektdata.dpi;//Punkte pro Zoll = 2,54cm
  
-		console.log(input_Height,objektdata)
+		var inputimage=gE("inputimage");
  
 		c=outputcanvas;
-		c.width=this.width;
-		c.height=this.height;
+		c.width =maR(objektdata.width*dpi/2.54/10);
+		c.height=maR(objektdata.height*dpi/2.54/10);
 		cc=c.getContext("2d");
+	
+		bb=inputimage.width;
+		hh=inputimage.height;	
  
-		bb=this.width;
-		hh=this.height;	
- 
- 
-		cc.drawImage(this,0,0,bb,hh, 0,0,c.width,c.height);
+		cc.drawImage(inputimage,0,0,bb,hh, 0,0,c.width,c.height);
 		imgd=cc.getImageData(0,0,c.width,c.height);
 		pix=imgd.data;
  
@@ -197,8 +227,9 @@ var akPicToLaser=function(zielID){
 				
 			}
 		 cc.putImageData(imgd, 0, 0);
- 
+ 		
 	}
+ 
  
 	var setPixel=function(canv,x,y,r,g,b,a){
 		var cc,id,d;
@@ -219,15 +250,15 @@ var akPicToLaser=function(zielID){
 		return pix;//[r,g,b,a]
 	}
  
-	var rr=function(r){return Math.floor(r*1000)/1000;}
  
 	var zeile=0;
 	var konvertiere=function(){
 		zeile=0;
+		
 		addClass(makeButt,"unsichtbar");
 		subClass(pauseButt,"unsichtbar");
 		outPutDoc.innerHTML=";start\n";
-		outPutDoc.innerHTML+=";"+rr(objektdata.width)+" x "+rr(objektdata.height)+"mm² \n";
+		outPutDoc.innerHTML+=";"+maF(objektdata.width)+" x "+maF(objektdata.height)+"mm² \n";
 		
 		outPutDoc.innerHTML+="G90 ;absolute Positioning\n";
 		outPutDoc.innerHTML+="M08 ;Flood Coolant On\n";// opt.
@@ -248,17 +279,16 @@ var akPicToLaser=function(zielID){
 		//mm pro Pixel
 		var stepX=objektdata.width/c.width ;	//mm pro Pixel
 		var stepY=objektdata.height/c.height ;	
- if(zeile==0){
-		console.log(stepX,stepY);
-		outPutDoc.innerHTML+="; mm/Pixel "+rr(stepX)+" "+rr(stepY)+"\n";
-		outPutDoc.innerHTML+="; "+objektdata.dpi+" dpi \n";
+		if(zeile==0){
+			outPutDoc.innerHTML+="; mm/Pixel "+maF(stepX)+" "+maF(stepY)+"\n";
+			outPutDoc.innerHTML+="; "+objektdata.dpi+" dpi \n";
 		}
  
 		var lposX=stepX;
 		var lposY=-zeile*stepY;
 		var s="";		
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
-		s+="G01 X"+rr(lposX)+" Y"+rr(lposY)+"\n";//or G00 Linear Move 
+		s+="G01 X"+maF(lposX)+" Y"+maF(lposY)+"\n";//or G00 Linear Move 
 		s+="M03\n";
  
 		x=0;
@@ -274,7 +304,7 @@ var akPicToLaser=function(zielID){
 				//TODO: leerfahrten am Ende evtl. entfernen
 				//burnIN am Anfang/Ende verhindern, wie? -> wenigerPower + langsammer?
 				s+="S"+Math.round(1000-(1000/255*lastpixel))+"\n";//Intensität
-				s+="G01 X"+rr(lposX)+"\n";//fahre bis
+				s+="G01 X"+maF(lposX)+"\n";//fahre bis
 				
 				//G1 Xnnn Ynnn Znnn Ennn Fnnn Snnn 
 				
@@ -296,13 +326,12 @@ var akPicToLaser=function(zielID){
  
 		zeile++;
 		if(zeile<c.height){
-				if(pause){
+				if(pause){//Stopp
 					//window.setTimeout(konvertiereF,1000);//1sec
 					outPutDoc.style.display="inline-block";	
 				}
 				else
 					window.setTimeout(konvertiereF,10);
- 
 			}
 			else{
 				//ende
@@ -339,15 +368,7 @@ var akPicToLaser=function(zielID){
  
 				outPutDoc.innerHTML="";
  
-				/*
-				for(var t=0;t<data.length;t++){
-					if(t/16==Math.round(t/16))ziel.innerHTML+="<br>";
-					c=data[t].charCodeAt(0);
-					ziel.innerHTML+="0x"
-					if(c<10)ziel.innerHTML+="0";
-					ziel.innerHTML+=Number(c).toString(16)+",";
-				}
-				*/
+				
  
 			};
 		reader.readAsBinaryString(inputFile.files[0]);		
@@ -355,12 +376,12 @@ var akPicToLaser=function(zielID){
  
  
 	ziel=gE(zielID);
-	console.log(ziel);
-	this.ini();
+	ini();
+	
+	
 }
  
- 
- 
+
  
 window.onload=function(){			
 	var ptl=new akPicToLaser("PicToLaser");
