@@ -11,5 +11,6 @@ my Laser with grbl/arduino on http://www.a-d-k.de/20150611_213938-Lasercutter.ht
 
 #### Lasertest Erbsen (50x50mm²) ####
 ![Test](https://cloud.githubusercontent.com/assets/3751286/10120508/3dfb0f5e-64bd-11e5-9727-f4dbdd309022.jpg)
+<br>
 mit verschiedenen Einstellungen.
 optimal: F1000, 8%(von 40W)
