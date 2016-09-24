@@ -31,32 +31,42 @@ var akPicToLaser=function(zielID){
 		if(re==null)re=undefined;
 		return re;
 	}
-	var addClass=function(o,s){	
-		var s2;
-		if(o!=undefined){
-			s2=o.className;
-			if(s2==undefined)s2="";
-			if(s2.indexOf(s)<0)o.className=s2+' '+s;	
+	var addClass=function(htmlNode,Classe){	
+		var newClass;
+		if(htmlNode!=undefined){
+			newClass=htmlNode.className; 
+			if(newClass==undefined || newClass=="")newClass=Classe;
+			else
+			if(!istClass(htmlNode,Classe))newClass+=' '+Classe; 
+			htmlNode.className=newClass;
 		}			
 	}
-	var subClass=function(o,s){
-		var s2;
-		if(o!=undefined){
-			s2=o.className;
-			s2=s2.split('  ').join(' ');
-			if(s2.indexOf(s)>-1)o.className=s2.split(' '+s).join('');
-			if(s2.indexOf(s)>-1)o.className=s2.split(s).join('');
+	var subClass=function(htmlNode,Classe){
+		var aClass,i;
+		if(htmlNode!=undefined && htmlNode.className!=undefined){
+			aClass=htmlNode.className.split(" ");	
+			var newClass="";
+			for(i=0;i<aClass.length;i++){
+				if(aClass[i]!=Classe){
+					if(newClass!="")newClass+=" ";
+					newClass+=aClass[i];
+					}
+			}
+			htmlNode.className=newClass;
 		}
 	}
 	var delClass=function(o){
 		if(o!=undefined) o.className="";		
 	}
 	var getClass=function(o){return o.className;}
-	var istClass=function(o,s){
-		if(o.className)
-			return (o.className.indexOf(s)>-1);
-		else
-			return false;
+	var istClass=function(htmlNode,Classe){
+		if(htmlNode.className){
+			var i,aClass=htmlNode.className.split(' ');
+			for(i=0;i<aClass.length;i++){
+				if(aClass[i]==Classe)return true;
+			}	
+		}		
+		return false;
 	}
 	var maF=function(r){return Math.floor(r*1000)/1000;}
 	var maR=function(r){return Math.round(r);}
