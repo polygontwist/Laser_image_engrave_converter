@@ -10,28 +10,23 @@
 
 
 var akPicToLaser=function(zielID){
-	var ziel;
+	var version="1.1 2016-09-25";
+	
+	var ziel;	
  
 	//http://www.shapeoko.com/wiki/index.php/Previewing_G-Code
 	//reprap.org/wiki/G-code
 	//http://linuxcnc.org/docs/html/gcode.html
  
 	//helper
-	var cE=function(z,e,id){
-			var l=document.createElement(e);
-			if(id!="" && id!=undefined)l.id=id;
-			if(z)z.appendChild(l);
-				else console.log("cE Ziel:" ,z);	
-			return l;
+	var cE=function(ziel,e,id,cn){
+			var newNode=document.createElement(e);
+			if(id!=undefined && id!="")newNode.id=id;
+			if(cn!=undefined && cn!="")newNode.className=cn;
+			if(ziel)ziel.appendChild(newNode);
+			return newNode;
 		}
-	var gE=function(id){
-		var re=undefined;
-		if(id=="")return re;
- 
-		re=document.getElementById(id);
-		if(re==null)re=undefined;
-		return re;
-	}
+	var gE=function(id){if(id=="")return undefined; else return document.getElementById(id);}
 	var addClass=function(htmlNode,Classe){	
 		var newClass;
 		if(htmlNode!=undefined){
@@ -135,28 +130,25 @@ var akPicToLaser=function(zielID){
 									
 		p.innerHTML+=" (Breite * Höhe in "+objektdata.unit+") ";
 		
-		html=cE(p,"a");
+		html=cE(p,"a",undefined,"button");
 		html.href="#";
 		html.onclick=setNewSize;
 		html.innerHTML="set new size";
-		html.className="Button";
 		
 		
 		p=cE(ziel,"p");
 		outputcanvas=cE(p,"canvas","outputcanvas");
 		
 		p=cE(ziel,"p");
-		makeButt=cE(p,"a","makeButt");
-		makeButt.className="Button";
+		makeButt=cE(p,"a","makeButt","button");
 		makeButt.href="#";
 		makeButt.onclick=function(){ konvertiere(); return false;}
 		makeButt.innerHTML="konvertiere";
 		addClass(makeButt,"unsichtbar");
  
 		p=cE(ziel,"p");
-		pauseButt=cE(p,"a","pauseButt");
+		pauseButt=cE(p,"a","pauseButt","button bred");
 		pauseButt.href="#";
-		pauseButt.className="Button";
 		pauseButt.onclick=function(){ pause=true; return false;}
 		pauseButt.innerHTML="stopp";
 		addClass(pauseButt,"unsichtbar");
@@ -268,7 +260,7 @@ var akPicToLaser=function(zielID){
 		
 		addClass(makeButt,"unsichtbar");
 		subClass(pauseButt,"unsichtbar");
-		outPutDoc.innerHTML=";start\n";
+		outPutDoc.innerHTML=";start v"+version+"\n";
 		outPutDoc.innerHTML+=";"+maF(objektdata.width)+" x "+maF(objektdata.height)+"mm² \n";
 		
 		outPutDoc.innerHTML+="G90 ;absolute Positioning\n";

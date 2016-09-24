@@ -13,7 +13,7 @@ h1{
 		width:400px;
 }
  
-#makeButt{
+.button{
 	color:#000;
 	text-decoration:none;
 	background-color:#ccc;
@@ -21,13 +21,23 @@ h1{
 	-webkit-border-radius: 5px;
 	border-radius:5px;
 	text-decoration:none;
-	-webkit-user-select: none;
+	/*-webkit-user-select: none;
    -ms-user-select: none;
-	user-select: none;
+	user-select: none;*/
 }
-#makeButt:hover{
+.button:hover{
 	background-color:#ddd;
 }
+ 
+.bred{
+	background-color: #d24c4c;
+	color: #F8F3C1;
+}
+ 
+.bred:hover{
+	background-color: #e18181;
+}
+ 
  
 #outputcanvas{
 	display:block;
