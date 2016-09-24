@@ -14,6 +14,7 @@ var akPicToLaser=function(zielID){
  
 	//http://www.shapeoko.com/wiki/index.php/Previewing_G-Code
 	//reprap.org/wiki/G-code
+	//http://linuxcnc.org/docs/html/gcode.html
  
 	//helper
 	var cE=function(z,e,id){
@@ -298,8 +299,8 @@ var akPicToLaser=function(zielID){
 		var lposY=-zeile*stepY;
 		var s="";		
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
-		s+="G01 X"+maF(lposX)+" Y"+maF(lposY)+"\n";//or G00 Linear Move 
-		s+="M03\n";
+		s+="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
+		s+="M3\n";										//Spindle On, Clockwise
  
 		x=0;
 		d=(x*4)+(y)*c.width*4;
@@ -313,8 +314,9 @@ var akPicToLaser=function(zielID){
 				//if(x==(c.width-1) && lastpixel!=255)
 				//TODO: leerfahrten am Ende evtl. entfernen
 				//burnIN am Anfang/Ende verhindern, wie? -> wenigerPower + langsammer?
-				s+="S"+Math.round(1000-(1000/255*lastpixel))+"\n";//Intensität
-				s+="G01 X"+maF(lposX)+"\n";//fahre bis
+				s+="G1 X"+maF(lposX)+" ";//fahre bis  				//G0 Rapid Move: quickly and efficiently as possible  
+																	//G1 Controlled Move: as precise as possible
+				s+="S"+Math.floor(1000-(1000/255*lastpixel))+"\n";	//Set Spindle Speed/Intensität
 				
 				//G1 Xnnn Ynnn Znnn Ennn Fnnn Snnn 
 				
@@ -325,7 +327,7 @@ var akPicToLaser=function(zielID){
 			lposX+=stepX;				
 		}
 		//s+="\n";
-		s+="M05\n";
+		s+="M5\n"; //Spindle Off
  
 		outPutDoc.innerHTML+=s;
  
@@ -345,9 +347,9 @@ var akPicToLaser=function(zielID){
 			}
 			else{
 				//ende
-				outPutDoc.innerHTML+="S0\n ";//
+				outPutDoc.innerHTML+="S0\n";//
 				outPutDoc.innerHTML+="G01 X0 Y0\n";//back to start
-				outPutDoc.innerHTML+="M09 ;Coolant Off\n";//
+				outPutDoc.innerHTML+="M9 ;Coolant Off\n";//
 				outPutDoc.innerHTML+=";end \n";//
 				outPutDoc.style.display="inline-block";	
 				addClass(pauseButt,"unsichtbar");				
