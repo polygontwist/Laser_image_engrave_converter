@@ -78,12 +78,16 @@ var akPicToLaser=function(zielID){
  
 	var input_Width=undefined;
 	var input_Height=undefined;
+	var input_FeedBurn=undefined;
+	var input_FeedMove=undefined;
  
 	var objektdata={
-		feedrateburn:800,		//max:2400  800@8% 1000@8%
+		feedratemin:100,
+		feedratemax:2400,
+		feedrateburn:1000,		//max:2400  800@8% 1000@8%
 		feedratemove:2400,
-		minGrau:128,		//0..255  alles unter minGrau wird zu 0 (nicht lasern)
-		width:1,	//mm
+		minGrau:128,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
+		width:1,				//mm
 		height:1,
 		unit:"mm",
 		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi
@@ -96,6 +100,7 @@ var akPicToLaser=function(zielID){
 	var oInputNr=function(ziel,id,inivalue,min,max){
 		var htmlNode;
 		var value=inivalue;
+		var isInt=false;
 		
 		var create=function(){
 			htmlNode=cE(ziel,"input",id);
@@ -110,6 +115,7 @@ var akPicToLaser=function(zielID){
 			
 			htmlNode.onchange=function(e){
 				value=this.value;
+				if(isInt)value=Math.floor(value);
 			}
 		}
 		
@@ -118,18 +124,35 @@ var akPicToLaser=function(zielID){
 		}
 		this.setvalue=function(v){
 			value=v;
+			if(isInt)value=Math.floor(value);
 			htmlNode.value=v;
 			htmlNode.setAttribute("value",value);
 		}
+		this.setclass=function(s){
+			htmlNode.className=s;
+		}
+		
+		this.getnode=function(){return htmlNode};
+		
+		this.setstyle=function(cssatrr,cssvalue){
+			htmlNode.style[cssatrr]=cssvalue;
+		}
+		
+		this.setisInt=function(b){
+			isInt=b
+			if(isInt)htmlNode.step="1";
+			}
 		
 		create();
 	}
 	
+	
+	
 	var ini=function(){
-		var html,p;
+		var html,p,obj;
 		
-		p=cE(ziel,"p");
-		html=cE(p,"span",'','',"Bitte Datei wählen: ");
+		p=cE(ziel,"p","p_file");
+		cE(p,"span",'','',"Bitte Datei wählen: ");
 				
 		inputFile=cE(p,"input","inputFile");
 		inputFile.type="file";
@@ -141,36 +164,50 @@ var akPicToLaser=function(zielID){
 		inputimage.onload=prework;
 		
 		p=cE(ziel,"p","setdaten","unsichtbar");
-		html=cE(p,"span",'','',"Lasern in einer Größe von ");
+		cE(p,"span",'','',"Lasern in einer Größe von&nbsp;");
 		
 		input_Width=new oInputNr(p,"input_Width",objektdata.width,1,500);
 				
-		html=cE(p,"span",'',''," * ");
+		cE(p,"span",'','',"&nbsp;*&nbsp;");
 		
 		input_Height=new oInputNr(p,"input_Height",objektdata.height,1,500);
 											
-		html=cE(p,"span",'',''," (Breite * Höhe in "+objektdata.unit+") ")
+		cE(p,"span",'','',"&nbsp;(Breite * Höhe in "+objektdata.unit+")&nbsp;")
 		
 		html=cE(p,"a",undefined,"button","set new size");
 		html.href="#";
 		html.onclick=setNewSize;
 		
+		cE(p,"br");
 		
-		p=cE(ziel,"p");
+		cE(p,"span",'','labeltext1',"Feedrate-burn:");
+		input_FeedBurn=new oInputNr(p,"input_feedburn",objektdata.feedrateburn,objektdata.feedratemin,objektdata.feedratemax);
+		input_FeedBurn.setclass("inputW60");
+		input_FeedBurn.setisInt(true);
+		
+		cE(p,"br");
+		
+		cE(p,"span",'','labeltext1'," Feedrate-move:");
+		input_FeedMove=new oInputNr(p,"input_feedmove",objektdata.feedratemove,objektdata.feedratemin,objektdata.feedratemax);
+		input_FeedMove.setclass("inputW60");
+		input_FeedBurn.setisInt(true);
+		
+		
+		p=cE(ziel,"p","p_outputcanvas","unsichtbar");
 		outputcanvas=cE(p,"canvas","outputcanvas");
 		
-		p=cE(ziel,"p");
-		makeButt=cE(p,"a","makeButt","button unsichtbar","konvertiere");
+		p=cE(ziel,"p","p_makebutt","unsichtbar");
+		makeButt=cE(p,"a","makeButt","button bgreen unsichtbar","konvertiere");
 		makeButt.href="#";
 		makeButt.onclick=function(){ konvertiere(); return false;}
 		
-		p=cE(ziel,"p");
 		pauseButt=cE(p,"a","pauseButt","button bred unsichtbar","stopp");
 		pauseButt.href="#";
 		pauseButt.onclick=function(){ objektdata.stopconvert=true; return false;}
 		
-		outPutDoc=cE(ziel,"textarea","outPutDoc");
- 		addClass(outPutDoc,"unsichtbar");
+		
+		p=cE(ziel,"p","p_outPutDoc","unsichtbar");
+		outPutDoc=cE(p,"textarea","outPutDoc","unsichtbar");
 	}
 	
 	
@@ -188,8 +225,10 @@ var akPicToLaser=function(zielID){
 		input_Width.setvalue (maF(objektdata.width));
 		input_Height.setvalue(maF(objektdata.height));
 		
-		c=gE("setdaten");
-		subClass(c,"unsichtbar");
+		subClass(gE("setdaten"),"unsichtbar");		
+		subClass(gE("p_outputcanvas"),"unsichtbar");
+		subClass(gE("p_makebutt"),"unsichtbar");
+				
 		
 		preWorkPicture();
 	}
@@ -276,7 +315,14 @@ var akPicToLaser=function(zielID){
  
 	var zeile=0;
 	var konvertiere=function(){
+		preWorkPicture();
+		
 		zeile=0;
+		
+		objektdata.feedratemove=input_FeedMove.getvalue();
+		objektdata.feedrateburn=input_FeedBurn.getvalue();
+		
+		
 		
 		addClass(makeButt,"unsichtbar");
 		subClass(pauseButt,"unsichtbar");
@@ -388,6 +434,7 @@ var akPicToLaser=function(zielID){
 		if(zeile<c.height){
 				if(objektdata.stopconvert){//Stopp
 					outPutDoc.style.display="inline-block";	
+					subClass(gE("p_outPutDoc"),"unsichtbar");
 				}
 				else
 					window.setTimeout(konvertiereF,10);
@@ -399,7 +446,10 @@ var akPicToLaser=function(zielID){
 				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
 				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
-				addClass(pauseButt,"unsichtbar");				
+				subClass(gE("p_outPutDoc"),"unsichtbar");
+				
+				addClass(pauseButt,"unsichtbar");
+				subClass(makeButt,"unsichtbar");						
 			}
 	};
   
