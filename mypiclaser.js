@@ -64,7 +64,7 @@ var akPicToLaser=function(zielID){
 		}		
 		return false;
 	}
-	var maF=function(r){return Math.floor(r*1000)/1000;}
+	var maF=function(r){return Math.floor(r*1000)/1000;} //runden mit 3 nachkommastellen
 	var maR=function(r){return Math.round(r);}
  
 	//--var--
@@ -79,10 +79,13 @@ var akPicToLaser=function(zielID){
 	var input_Height;
  
 	var objektdata={
+		feedrateburn: 800,		//max:2400  800@8%
+		feedratemove:2400,
+		minGrau:128,		//0..255  alles unter minGrau wird zu 0
 		width:1,	//mm
 		height:1,
 		unit:"mm",
-		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand --> 203,2dpi
+		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi
 		dpi:75		 //Punkte pro Zoll = Punkte pro 2,54cm
 	}
  
@@ -224,6 +227,9 @@ var akPicToLaser=function(zielID){
  
 				v=Math.round(r*0.299+g*0.587+b*0.114);	// nach helligkeit
 				v=Math.floor((r+g+b)/3);				// (r+g+b)/2
+				
+				if(v>objektdata.minGrau)v=255;
+				
 				pix[d+0]=v;
 				pix[d+1]=v;
 				pix[d+2]=v;
@@ -266,14 +272,15 @@ var akPicToLaser=function(zielID){
 		outPutDoc.innerHTML+="G90 ;absolute Positioning\n";
 		outPutDoc.innerHTML+="M08 ;Flood Coolant On\n";// opt.
 		outPutDoc.innerHTML+="G21 ;Set Units to Millimeters\n";// 
-		outPutDoc.innerHTML+="F1000 ;speed\n";
+		//outPutDoc.innerHTML+="F"+objektdata.feedrateburn+" ;speed\n"; //speed hängt an G
 		outPutDoc.style.display="none"
 		window.setTimeout(konvertiereF,10);//Zeilen per Timer durchgehen um Script-Blockierung zu verhindern
 	}
  
  
 	var konvertiereF=function(){
-		var c,cc,imgd,pix,x,y,d,r,g,b;
+		var c,cc,imgd,pix,x,y,d,r,g,b,szeile,
+			valuecount;
 		c=outputcanvas;
 		cc=c.getContext("2d");
 		imgd=cc.getImageData(0,0,c.width,c.height);
@@ -289,44 +296,73 @@ var akPicToLaser=function(zielID){
  
 		var lposX=stepX;
 		var lposY=-zeile*stepY;
-		var s="";		
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
-		s+="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
-		s+="M3\n";										//Spindle On, Clockwise
- 
+		
+		szeile="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0 F"+objektdata.feedratemove+"\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
+		//szeile+="F"+objektdata.feedrateburn+"\n";
+		szeile+="M3\n";										//Spindle On, Clockwise
+		
+		valuecount=0;
 		x=0;
 		d=(x*4)+(y)*c.width*4;
 		var lastpixel=pix[d+1];
+		var minblack=255;
+		var lastbefehl="";
+		
 		for(x=1;x<c.width;x++){
 			d=(x*4)+(y)*c.width*4;
-			r=pix[d+1];//nur Rotkanal auswerten (=graustufen)
+			r=pix[d+1];//nur Rotkanal auswerten (=graustufen 0...255)
 			
 			//lauflängen...
 			if(r!=lastpixel || x==(c.width-1)){
 				//if(x==(c.width-1) && lastpixel!=255)
 				//TODO: leerfahrten am Ende evtl. entfernen
 				//burnIN am Anfang/Ende verhindern, wie? -> wenigerPower + langsammer?
-				s+="G1 X"+maF(lposX)+" ";//fahre bis  				//G0 Rapid Move: quickly and efficiently as possible  
-																	//G1 Controlled Move: as precise as possible
-				s+="S"+Math.floor(1000-(1000/255*lastpixel))+"\n";	//Set Spindle Speed/Intensität
+				lastbefehl="G1 X"+maF(lposX);//fahre bis  	//G0 Rapid Move: quickly and efficiently as possible  
+															//G1 Controlled Move: as precise as possible
+				if(lastpixel==255)
+					lastbefehl+=" F"+objektdata.feedratemove;
+				else
+					lastbefehl+=" F"+objektdata.feedrateburn;
 				
+				lastbefehl+=" S"+Math.floor(1000-(1000/255*lastpixel))+"\n";	//Set Spindle Speed/Intensität
+			
+				if( x==(c.width-1) ){
+					if(lastpixel<255)
+						szeile+=lastbefehl;
+				}
+				else{
+					szeile+=lastbefehl;
+				}
+				
+				valuecount++;
+				if(minblack>lastpixel)minblack=lastpixel;
 				//G1 Xnnn Ynnn Znnn Ennn Fnnn Snnn 
 				
 				lastpixel=r;
 			}	
 			
-			//if(r>128)s+="0";else s+="1"
 			lposX+=stepX;				
 		}
-		//s+="\n";
-		s+="M5\n"; //Spindle Off
- 
-		outPutDoc.innerHTML+=s;
- 
-		setPixel(c,0,zeile, 255,0,0,255);
-		setPixel(c,1,zeile, 255,0,0,255);
-		setPixel(c,(c.width-1),zeile, 255,0,0,255);
-		setPixel(c,(c.width-2),zeile, 255,0,0,255);
+		//szeile+="\n";
+		//TODO: wenn Zeile =0 dann gleich zur nächsten
+		szeile+="M5\n"; //Spindle Off
+		
+ 		if(valuecount>1 && minblack<255){//keine Leerzeilen erzeugen
+			outPutDoc.innerHTML+=szeile;
+			
+			setPixel(c,0,zeile, 255,0,0,255);
+			setPixel(c,1,zeile, 255,0,0,255);
+			setPixel(c,(c.width-1),zeile, 255,0,0,255);
+			setPixel(c,(c.width-2),zeile, 255,0,0,255);			
+			
+		}else{//Leerzeile
+			setPixel(c,0,zeile, 0,255,0,255);
+			setPixel(c,1,zeile, 0,255,0,255);
+			setPixel(c,(c.width-1),zeile, 0,255,0,255);
+			setPixel(c,(c.width-2),zeile, 0,255,0,255);			
+		}
+		 
  
 		zeile++;
 		if(zeile<c.height){
@@ -340,7 +376,7 @@ var akPicToLaser=function(zielID){
 			else{
 				//ende
 				outPutDoc.innerHTML+="S0\n";//
-				outPutDoc.innerHTML+="G01 X0 Y0\n";//back to start
+				outPutDoc.innerHTML+="G0 X0 Y0\n";//back to start
 				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
 				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
