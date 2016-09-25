@@ -260,8 +260,8 @@ var akPicToLaser=function(zielID){
 		
 		addClass(makeButt,"unsichtbar");
 		subClass(pauseButt,"unsichtbar");
-		outPutDoc.innerHTML=";start v"+version+"\n";
-		outPutDoc.innerHTML+=";"+maF(objektdata.width)+" x "+maF(objektdata.height)+"mm² \n";
+		outPutDoc.innerHTML=" ; start v"+version+"\n";
+		outPutDoc.innerHTML+=" ; "+maF(objektdata.width)+" x "+maF(objektdata.height)+"mm² \n";
 		
 		outPutDoc.innerHTML+="G90 ;absolute Positioning\n";
 		outPutDoc.innerHTML+="M08 ;Flood Coolant On\n";// opt.
@@ -341,8 +341,8 @@ var akPicToLaser=function(zielID){
 				//ende
 				outPutDoc.innerHTML+="S0\n";//
 				outPutDoc.innerHTML+="G01 X0 Y0\n";//back to start
-				outPutDoc.innerHTML+="M9 ;Coolant Off\n";//
-				outPutDoc.innerHTML+=";end \n";//
+				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
+				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
 				addClass(pauseButt,"unsichtbar");				
 			}
