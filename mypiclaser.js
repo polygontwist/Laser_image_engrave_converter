@@ -5,12 +5,12 @@
 	optimal Speed F1000 und 8% Laserstärke
 	
 	Testen ob weniger Speed und Laserstärke geht (F500 & 4% ?)
-	150dpi testen
+	TODO: 150dpi testen
 */
 
 
 var akPicToLaser=function(zielID){
-	var version="1.2 2016-09-25";
+	var version="1.4 2016-09-26";
 	
 	var ziel;	
  
@@ -80,24 +80,27 @@ var akPicToLaser=function(zielID){
 	var input_Height=undefined;
 	var input_FeedBurn=undefined;
 	var input_FeedMove=undefined;
+	var input_DPI=undefined;
  
 	var objektdata={
 		feedratemin:100,
 		feedratemax:2400,
 		feedrateburn:1000,		//max:2400  800@8% 1000@8%
 		feedratemove:2400,
-		minGrau:128,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
+		minGrau:255,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
 		width:1,				//mm
 		height:1,
 		unit:"mm",
-		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi
+		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi, sonst Überlappung
 		dpi:75,		 //Punkte pro Zoll = Punkte pro 2,54cm
 	
+		objektdata:false,
+		graufunc:"GF",
 		timer:undefined,
 		stopconvert:false
 	}
  
-	var oInputNr=function(ziel,id,inivalue,min,max){
+	var createOInputNr=function(ziel,id,inivalue,min,max){
 		var htmlNode;
 		var value=inivalue;
 		var isInt=false;
@@ -146,7 +149,85 @@ var akPicToLaser=function(zielID){
 		create();
 	}
 	
+	var createSlider=function(ziel,labeltext,min,max,step,value){		
+		var htmlnode=cE(ziel,'label');
+		htmlnode.innerHTML=labeltext;
+		
+		var input=cE(ziel,'input');
+		input.className="regler";
+		input.type="range";
+		input.min=min;
+		input.max=max;
+		input.step=step;
+		input.value=value;
+		
+		var ocf=function(){
+			this.valueview.innerHTML=this.value;
+		}
+		
+		input.addEventListener("change", ocf);//Werteanzeige aktualisieren
+		input.addEventListener("click", ocf);
+		input.addEventListener("keyup", ocf);
+		
+		//input.onchange=function(){};//frei für Userfunctionen
+			
+		
+		var htmlnode=cE(ziel,'label');
+		htmlnode.innerHTML=input.value;
+		htmlnode.className="reglervalue";
+		
+		input.valueview=htmlnode;
+		
+		return input;
+	}
 	
+	var createCeckBox=function(ziel,labeltext,ischecked){
+		var id="CB_"+labeltext.split(' ').join('');
+		var input=cE(ziel,'input');
+		input.id=id;
+		input.type="checkbox";
+		if(ischecked!=undefined)
+			input.checked=ischecked;
+		else
+			input.checked=false;
+		
+		var label=cE(ziel,'label');
+		label.innerHTML=labeltext;
+		label.setAttribute("for",id);
+		label.onclick=function(){};
+		
+		return input;
+	}
+	
+	var createRadioBox=function(ziel,name,arrRadios,setfunc){
+		var i,r,input,label;
+		var radios=[];
+		var ocf=function(){
+			setfunc(this.value);
+		}
+
+		for(i=0;i<arrRadios.length;i++){
+			r=arrRadios[i];
+			
+			input=cE(ziel,'input');
+			input.type="radio";
+			input.name=name;
+			input.value=r.value;
+			input.id="RB_"+name+i;
+			input.radios=radios;
+			if(r.checked!=undefined)input.checked=r.checked;
+			input.addEventListener("change", ocf);//Werteanzeige aktualisieren
+			
+			if(r.text!=undefined){
+				label=cE(ziel,'label');
+				label.innerHTML=r.text;
+				label.setAttribute("for","RB_"+name+i);
+				label.onclick=function(){};
+			}
+			radios.push(input);
+			
+		}
+	}
 	
 	var ini=function(){
 		var html,p,obj;
@@ -166,11 +247,11 @@ var akPicToLaser=function(zielID){
 		p=cE(ziel,"p","setdaten","unsichtbar");
 		cE(p,"span",'','',"Lasern in einer Größe von&nbsp;");
 		
-		input_Width=new oInputNr(p,"input_Width",objektdata.width,1,500);
+		input_Width=new createOInputNr(p,"input_Width",objektdata.width,1,500);
 				
 		cE(p,"span",'','',"&nbsp;*&nbsp;");
 		
-		input_Height=new oInputNr(p,"input_Height",objektdata.height,1,500);
+		input_Height=new createOInputNr(p,"input_Height",objektdata.height,1,500);
 											
 		cE(p,"span",'','',"&nbsp;(Breite * Höhe in "+objektdata.unit+")&nbsp;")
 		
@@ -181,19 +262,51 @@ var akPicToLaser=function(zielID){
 		cE(p,"br");
 		
 		cE(p,"span",'','labeltext1',"Feedrate-burn:");
-		input_FeedBurn=new oInputNr(p,"input_feedburn",objektdata.feedrateburn,objektdata.feedratemin,objektdata.feedratemax);
+		input_FeedBurn=new createOInputNr(p,"input_feedburn",objektdata.feedrateburn,objektdata.feedratemin,objektdata.feedratemax);
 		input_FeedBurn.setclass("inputW60");
 		input_FeedBurn.setisInt(true);
 		
 		cE(p,"br");
 		
-		cE(p,"span",'','labeltext1'," Feedrate-move:");
-		input_FeedMove=new oInputNr(p,"input_feedmove",objektdata.feedratemove,objektdata.feedratemin,objektdata.feedratemax);
+		cE(p,"span",'','labeltext1',"Feedrate-move:");
+		input_FeedMove=new createOInputNr(p,"input_feedmove",objektdata.feedratemove,objektdata.feedratemin,objektdata.feedratemax);
 		input_FeedMove.setclass("inputW60");
-		input_FeedBurn.setisInt(true);
+		input_FeedMove.setisInt(true);
+		
+		cE(p,"br");
+		
+		cE(p,"span",'','labeltext1',"Auflösung:");
+		input_DPI=new createOInputNr(p,"input_dpi",objektdata.dpi,1,600);
+		input_DPI.setclass("inputW60");
+		input_DPI.setisInt(true);
 		
 		
 		p=cE(ziel,"p","p_outputcanvas","unsichtbar");
+		html=createCeckBox(p,"invertieren",objektdata.invertieren);
+		html.onchange=function(){
+			 objektdata.invertieren=this.checked;
+			 setNewSize();
+		}
+		
+		cE(p,"br");
+		html=createSlider(p,"minimaler Grauton: ",0,255,1,objektdata.minGrau);
+		html.onchange=function(e){
+			objektdata.minGrau=this.value;
+			setNewSize();
+		}
+		cE(p,"br");
+		cE(p,"span",'','labeltext1',"Grauumrechnung nach:");
+		createRadioBox(p,"graucalfunc",[
+			{value:"GF"	,text:"Helligkeit",checked:true},
+			{value:"KR"	,text:"Kanal Rot"},
+			{value:"KG"	,text:"Kanal Grün"},
+			{value:"KB"	,text:"Kanal Blau"},
+			{value:"KRGB"	,text:"(rgb)/3"}
+			],
+			function(val){objektdata.graufunc=val;setNewSize();}
+		);
+		
+		cE(p,"br");		
 		outputcanvas=cE(p,"canvas","outputcanvas");
 		
 		p=cE(ziel,"p","p_makebutt","unsichtbar");
@@ -203,7 +316,11 @@ var akPicToLaser=function(zielID){
 		
 		pauseButt=cE(p,"a","pauseButt","button bred unsichtbar","stopp");
 		pauseButt.href="#";
-		pauseButt.onclick=function(){ objektdata.stopconvert=true; return false;}
+		pauseButt.onclick=function(){ 
+			objektdata.stopconvert=true;
+			addClass(pauseButt,"unsichtbar"); 
+			subClass(makeButt,"unsichtbar");
+			return false;}
 		
 		
 		p=cE(ziel,"p","p_outPutDoc","unsichtbar");
@@ -218,13 +335,14 @@ var akPicToLaser=function(zielID){
 	var prework=function(){
 		var c;
 		var dpi=objektdata.dpi;//Punkte pro Zoll = 2,54cm
-		
+	
  		objektdata.width	=this.width /dpi*2.54*10;
 		objektdata.height	=this.height/dpi*2.54*10;
  
 		input_Width.setvalue (maF(objektdata.width));
 		input_Height.setvalue(maF(objektdata.height));
-		
+		input_DPI.setvalue(objektdata.dpi);
+			
 		subClass(gE("setdaten"),"unsichtbar");		
 		subClass(gE("p_outputcanvas"),"unsichtbar");
 		subClass(gE("p_makebutt"),"unsichtbar");
@@ -236,7 +354,8 @@ var akPicToLaser=function(zielID){
  	var setNewSize=function(e){
 		objektdata.width	=input_Width.getvalue();
 		objektdata.height	=input_Height.getvalue();
-
+		objektdata.dpi		=input_DPI.getvalue();
+		
 		preWorkPicture();
 		
 		subClass(makeButt,"unsichtbar");
@@ -267,14 +386,35 @@ var akPicToLaser=function(zielID){
 		for(y=0;y<c.height;y++)
 			for(x=0;x<c.width;x++){
 				d=(x*4)+(y)*c.width*4;
-				
 				r=Math.round(16/255*pix[d+0])*16;
 				g=Math.round(16/255*pix[d+1])*16;
 				b=Math.round(16/255*pix[d+2])*16;
 				alpha=pix[d+3];
-				 
-				v=Math.round(r*0.299+g*0.587+b*0.114);	// nach helligkeit
-				v=Math.floor((r+g+b)/3);				// (r+g+b)/2
+				
+				if(objektdata.invertieren===true){
+					r=255-r;
+					g=255-g;
+					b=255-b;
+				}
+				
+				switch(objektdata.graufunc){
+					case "KR":
+						v=r;
+						break;
+					case "KG":
+						v=g;
+						break;
+					case "KB":
+						v=b;
+						break;
+					case "KRGB":
+						v=Math.floor((r+g+b)/3);
+						break;
+						
+					default:
+						v=Math.round(r*0.299+g*0.587+b*0.114);	// nach helligkeit
+					
+				}
 				
 				if(alpha<255){//transparente stellen(gif,png) mit weiß füllen
 					alpha=255; 
@@ -315,12 +455,17 @@ var akPicToLaser=function(zielID){
  
 	var zeile=0;
 	var konvertiere=function(){
+		objektdata.stopconvert=false;
+		
+		objektdata.dpi=input_DPI.getvalue();
+		
 		preWorkPicture();
 		
 		zeile=0;
 		
 		objektdata.feedratemove=input_FeedMove.getvalue();
 		objektdata.feedrateburn=input_FeedBurn.getvalue();
+
 		
 		
 		
@@ -332,7 +477,7 @@ var akPicToLaser=function(zielID){
 		outPutDoc.innerHTML=" ; start v"+version+"\n";
 		outPutDoc.innerHTML+=" ; "+maF(objektdata.width)+" x "+maF(objektdata.height)+"mm² \n";
 		
-		outPutDoc.innerHTML+="G90 ;absolute Positioning\n";
+		outPutDoc.innerHTML+="G90 ;absolute Position\n";
 		outPutDoc.innerHTML+="M08 ;Flood Coolant On\n";// opt.
 		outPutDoc.innerHTML+="G21 ;Set Units to Millimeters\n";// 
 				
