@@ -66,7 +66,7 @@ var akPicToLaser=function(zielID){
 		}		
 		return false;
 	}
-	var maF=function(r){return Math.floor(r*1000)/1000;} //runden mit 3 nachkommastellen
+	var maF=function(r){return Math.floor(r*100)/100;} //runden mit 2 nachkommastellen
 	var maR=function(r){return Math.round(r);}
  
 	//--var--
@@ -96,6 +96,7 @@ var akPicToLaser=function(zielID){
 		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi, sonst Überlappung
 		dpi:75,		 //Punkte pro Zoll = Punkte pro 2,54cm
 	
+		dauer:0,
 		objektdata:false,
 		graufunc:"GF",
 		timer:undefined,
@@ -482,7 +483,7 @@ var akPicToLaser=function(zielID){
 		preWorkPicture();
 		
 		zeile=0;
-		
+		objektdata.dauer=0;
 		objektdata.feedratemove=input_FeedMove.getvalue();
 		objektdata.feedrateburn=input_FeedBurn.getvalue();
 
@@ -505,9 +506,18 @@ var akPicToLaser=function(zielID){
 		objektdata.timer=window.setTimeout(konvertiereF,10);//Zeilen per Timer durchgehen um Script-Blockierung zu verhindern
 	};
  
+	var calcDauerData={x:0,y:0};
+	var calcDauer=function(x,y,speed){
+		if(objektdata.dauer==0){
+			 calcDauerData={x:0,y:0};
+		}
+		var weg=Math.sqrt( Math.pow(y-calcDauerData.y,2)+Math.pow(x-calcDauerData.x,2));
+		objektdata.dauer+=1/speed*weg;		
+	}
+ 
  
 	var konvertiereF=function(){
-		var c,cc,imgd,pix,x,y,d,r,g,b,szeile,
+		var c,cc,imgd,pix,x,y,d,r,g,b,szeile,frb,
 			valuecount;
 		c=outputcanvas;
 		cc=c.getContext("2d");
@@ -527,6 +537,7 @@ var akPicToLaser=function(zielID){
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
 		
 		szeile="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0 F"+objektdata.feedratemove+"\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
+		calcDauer(maF(lposX),maF(lposY),objektdata.feedratemove);
 		szeile+="M3\n";										//Spindle On, Clockwise
 		
 		valuecount=0;
@@ -549,20 +560,26 @@ var akPicToLaser=function(zielID){
 				
 				//G1 Xnnn Ynnn Znnn Ennn Fnnn Snnn 
 				lastbefehl="G1 X"+maF(lposX);//fahre bis  	//G0 Rapid Move: quickly and efficiently as possible  
-															//G1 Controlled Move: as precise as possible
+				
+				frb=objektdata.feedrateburn;
+				
+											//G1 Controlled Move: as precise as possible
 				if(lastpixel==255)
-					lastbefehl+=" F"+objektdata.feedratemove;
-				else
-					lastbefehl+=" F"+objektdata.feedrateburn;
+					frb=objektdata.feedratemove;
+				
+				lastbefehl+=" F"+frb;
 				
 				lastbefehl+=" S"+Math.floor(1000-(1000/255*lastpixel))+"\n";	//Set Spindle Speed/Intensität
 			
 				if( x==(c.width-1) ){//leerfahrten am Ende entfernen
-					if(lastpixel<255)
+					if(lastpixel<255){
 						szeile+=lastbefehl;
+						calcDauer(maF(lposX),maF(lposY),frb);
+						}
 				}
 				else{
 					szeile+=lastbefehl;
+					calcDauer(maF(lposX),maF(lposY),frb);
 				}
 				
 				valuecount++;
@@ -608,6 +625,7 @@ var akPicToLaser=function(zielID){
 				outPutDoc.innerHTML+="S0\n";//
 				outPutDoc.innerHTML+="G0 X0 Y0\n";//back to start
 				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
+				outPutDoc.innerHTML+=" ; Dauer ca. "+Math.round(objektdata.dauer+1)+"min \n";//
 				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
 				subClass(gE("p_outPutDoc"),"unsichtbar");
