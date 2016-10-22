@@ -483,11 +483,11 @@ var akPicToLaser=function(zielID){
 		preWorkPicture();
 		
 		zeile=0;
-		objektdata.dauer=0;
+		
 		objektdata.feedratemove=input_FeedMove.getvalue();
 		objektdata.feedrateburn=input_FeedBurn.getvalue();
 
-		
+		objektdata.dauer=0;
 		
 		
 		addClass(makeButt,"unsichtbar");
@@ -511,8 +511,10 @@ var akPicToLaser=function(zielID){
 		if(objektdata.dauer==0){
 			 calcDauerData={x:0,y:0};
 		}
+		//Weg von der letzten Position zur neuen:
 		var weg=Math.sqrt( Math.pow(y-calcDauerData.y,2)+Math.pow(x-calcDauerData.x,2));
 		objektdata.dauer+=1/speed*weg;		
+		calcDauerData={x:x,y:y};//letzte Position merken
 	}
  
  
