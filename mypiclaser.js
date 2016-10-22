@@ -6,6 +6,7 @@
 	
 	Testen ob weniger Speed und Laserstärke geht (F500 & 4% ?)
 	TODO: 150dpi testen
+	TODO: 300dpi testen (OK @800mm/s)
 */
 
 
@@ -88,6 +89,7 @@ var akPicToLaser=function(zielID){
 		feedrateburn:1000,		//max:2400  800@8% 1000@8%
 		feedratemove:2400,
 		minGrau:255,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
+		Graustufen:255,			//0..255  feine Unterschiede evtl. nicht sichbar, daher reduzieren
 		width:1,				//mm
 		height:1,
 		unit:"mm",
@@ -265,6 +267,7 @@ var akPicToLaser=function(zielID){
 		input_FeedBurn=new createOInputNr(p,"input_feedburn",objektdata.feedrateburn,objektdata.feedratemin,objektdata.feedratemax);
 		input_FeedBurn.setclass("inputW60");
 		input_FeedBurn.setisInt(true);
+		cE(p,"span",'','labeltext2',"mm/s");
 		
 		cE(p,"br");
 		
@@ -272,6 +275,7 @@ var akPicToLaser=function(zielID){
 		input_FeedMove=new createOInputNr(p,"input_feedmove",objektdata.feedratemove,objektdata.feedratemin,objektdata.feedratemax);
 		input_FeedMove.setclass("inputW60");
 		input_FeedMove.setisInt(true);
+		cE(p,"span",'','labeltext2',"mm/s");
 		
 		cE(p,"br");
 		
@@ -279,6 +283,7 @@ var akPicToLaser=function(zielID){
 		input_DPI=new createOInputNr(p,"input_dpi",objektdata.dpi,1,600);
 		input_DPI.setclass("inputW60");
 		input_DPI.setisInt(true);
+		cE(p,"span",'','labeltext2',"dpi");
 		
 		
 		p=cE(ziel,"p","p_outputcanvas","unsichtbar");
@@ -292,6 +297,12 @@ var akPicToLaser=function(zielID){
 		html=createSlider(p,"minimaler Grauton: ",0,255,1,objektdata.minGrau);
 		html.onchange=function(e){
 			objektdata.minGrau=this.value;
+			setNewSize();
+		}
+		cE(p,"br");
+		html=createSlider(p,"Graustufen (fein): ",1,255,1,objektdata.Graustufen);
+		html.onchange=function(e){
+			objektdata.Graustufen=this.value;
 			setNewSize();
 		}
 		cE(p,"br");
@@ -365,11 +376,11 @@ var akPicToLaser=function(zielID){
 	
 
 	var preWorkPicture=function(){		
-		var c,cc,bb,hh,imgd,pix,v,r,g,b,alpha,d,x,y,e;
+		var c,cc,bb,hh,imgd,pix,v,r,g,b,alpha,d,x,y,e,gg;
 		var dpi=objektdata.dpi;//Punkte pro Zoll = 2,54cm
  
 		var inputimage=gE("inputimage");
- 
+		//Ausgangsbild auf Zielgröße bringen und in outputcanvas zwischenspeichern
 		c=outputcanvas;
 		c.width =maR(objektdata.width*dpi/2.54/10);
 		c.height=maR(objektdata.height*dpi/2.54/10);
@@ -377,18 +388,27 @@ var akPicToLaser=function(zielID){
 	
 		bb=inputimage.width;
 		hh=inputimage.height;	
- 
+		
 		cc.drawImage(inputimage,0,0,bb,hh, 0,0,c.width,c.height);
 		imgd=cc.getImageData(0,0,c.width,c.height);
 		pix=imgd.data;
  
-		//in graustufen
+		//outputcanvas in Graustufen wandeln
 		for(y=0;y<c.height;y++)
 			for(x=0;x<c.width;x++){
 				d=(x*4)+(y)*c.width*4;
-				r=Math.round(16/255*pix[d+0])*16;
-				g=Math.round(16/255*pix[d+1])*16;
-				b=Math.round(16/255*pix[d+2])*16;
+				
+				r=pix[d+0];
+				g=pix[d+1];
+				b=pix[d+2];
+				
+				if(objektdata.Graustufen<255){//auf xx Stufen reduzieren
+					gg=255-objektdata.Graustufen;
+					r=Math.round(Math.round(r/gg)*gg); 
+					g=Math.round(Math.round(g/gg)*gg);
+					b=Math.round(Math.round(b/gg)*gg);
+				}
+				
 				alpha=pix[d+3];
 				
 				if(objektdata.invertieren===true){
@@ -502,7 +522,7 @@ var akPicToLaser=function(zielID){
 			outPutDoc.innerHTML+="; "+objektdata.dpi+" dpi \n";
 		}
  
-		var lposX=stepX;
+		var lposX=0;
 		var lposY=-zeile*stepY;
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
 		
@@ -516,17 +536,16 @@ var akPicToLaser=function(zielID){
 		var lastpixel=pix[d+getkanal];
 		var minblack=255;
 		var lastbefehl="";
-		
+		lposX+=stepX;
 		for(x=1;x<c.width;x++){
 			d=(x*4)+(y)*c.width*4; //pos=rgba * y*width*rgba
 			r=pix[d+getkanal];//nur einen kanal auswerten (=graustufen 0...255)
 			
 			//lauflängen...
 			if(r!=lastpixel || x==(c.width-1)){
-				//if(x==(c.width-1) && lastpixel!=255)
 				
-				//burnIN am Anfang/Ende verhindern, wie? -> wenigerPower + langsammer?
-				//-->liegt an grbl -->CNC-Fräse langsam anfahren/abbremsen
+				if(x==(c.width-1))lposX+=stepX;			
+				
 				
 				//G1 Xnnn Ynnn Znnn Ennn Fnnn Snnn 
 				lastbefehl="G1 X"+maF(lposX);//fahre bis  	//G0 Rapid Move: quickly and efficiently as possible  
@@ -577,7 +596,7 @@ var akPicToLaser=function(zielID){
  
 		zeile++;
 		if(zeile<c.height){
-				if(objektdata.stopconvert){//Stopp
+				if(objektdata.stopconvert){//Stopp gedrückt?
 					outPutDoc.style.display="inline-block";	
 					subClass(gE("p_outPutDoc"),"unsichtbar");
 				}
