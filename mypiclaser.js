@@ -102,6 +102,7 @@ var akPicToLaser=function(zielID){
 		dpi:150,		 //Punkte pro Zoll = Punkte pro 2,54cm
 		
 		yspezialmove:true,
+		timekorr:2.0,
 		
 		dauer:0,
 		//objektdata:false,
@@ -551,8 +552,9 @@ var akPicToLaser=function(zielID){
 			//DOTO:Test
 			szeile+="G1 X"+maF(lposX)+" S0 F"+objektdata.feedratemove+"\n";
 			calcDauer(maF(lposX),maF(lposY),objektdata.feedratemove);
+			szeile+="G1 Y"+maF(lposY-2)+"\n";
 			calcDauer(maF(lposX),maF(lposY-2),objektdata.feedratemove);
-			//y weiter verfahren um ungenauigkeit im Gerät zu umgehen
+			//y weiter verfahren um Ungenauigkeit im Gerät zu umgehen
 		}
 		
 		szeile+="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0 F"+objektdata.feedratemove+"\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
@@ -644,7 +646,7 @@ var akPicToLaser=function(zielID){
 				outPutDoc.innerHTML+="S0\n";//
 				outPutDoc.innerHTML+="G0 X0 Y0\n";//back to start
 				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
-				outPutDoc.innerHTML+=" ; Dauer min. "+Math.round(objektdata.dauer+1)+"min \n";//
+				outPutDoc.innerHTML+=" ; Dauer min. "+Math.round(objektdata.dauer*objektdata.timekorr+1)+"min \n";//
 				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
 				subClass(gE("p_outPutDoc"),"unsichtbar");
