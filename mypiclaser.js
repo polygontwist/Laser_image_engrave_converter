@@ -5,8 +5,13 @@
 	optimal Speed F1000 und 8% Laserstärke
 	
 	Testen ob weniger Speed und Laserstärke geht (F500 & 4% ?)
-	TODO: 150dpi testen
-	TODO: 300dpi testen (OK @800mm/s)
+	
+	y-Versprung im Gerät umgehen -->yspezialmove
+	
+	150dpi testen (OK @500mm/s)
+	150dpi testen (OK @800mm/s)
+	300dpi testen (OK @500mm/s)
+	300dpi testen (OK @800mm/s)
 */
 
 
@@ -86,18 +91,20 @@ var akPicToLaser=function(zielID){
 	var objektdata={
 		feedratemin:100,
 		feedratemax:2400,
-		feedrateburn:1000,		//max:2400  800@8% 1000@8%
-		feedratemove:2400,
-		minGrau:255,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
+		feedrateburn:500,		//max:2400  800@8% 1000@8%
+		feedratemove:500,
+		minGrau:180,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
 		Graustufen:255,			//0..255  feine Unterschiede evtl. nicht sichbar, daher reduzieren
 		width:1,				//mm
 		height:1,
 		unit:"mm",
 		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi, sonst Überlappung
-		dpi:75,		 //Punkte pro Zoll = Punkte pro 2,54cm
-	
+		dpi:150,		 //Punkte pro Zoll = Punkte pro 2,54cm
+		
+		yspezialmove:true,
+		
 		dauer:0,
-		objektdata:false,
+		//objektdata:false,
 		graufunc:"GF",
 		timer:undefined,
 		stopconvert:false
@@ -519,7 +526,8 @@ var akPicToLaser=function(zielID){
  
  
 	var konvertiereF=function(){
-		var c,cc,imgd,pix,x,y,d,r,g,b,szeile,frb,
+		var c,cc,imgd,pix,x,y,d,r,g,b,frb,
+			szeile="",
 			valuecount;
 		c=outputcanvas;
 		cc=c.getContext("2d");
@@ -538,7 +546,16 @@ var akPicToLaser=function(zielID){
 		var lposY=-zeile*stepY;
 		y=zeile;//Y per Timer sonst Script zu sehr ausgelastet
 		
-		szeile="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0 F"+objektdata.feedratemove+"\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
+		
+		if(objektdata.yspezialmove && zeile!=0){
+			//DOTO:Test
+			szeile+="G1 X"+maF(lposX)+" S0 F"+objektdata.feedratemove+"\n";
+			calcDauer(maF(lposX),maF(lposY),objektdata.feedratemove);
+			calcDauer(maF(lposX),maF(lposY-2),objektdata.feedratemove);
+			//y weiter verfahren um ungenauigkeit im Gerät zu umgehen
+		}
+		
+		szeile+="G1 X"+maF(lposX)+" Y"+maF(lposY)+" S0 F"+objektdata.feedratemove+"\n";	//erste Position anfahren  //TODO: testen mit S0 evtl. m3/m5 nicht nötig
 		calcDauer(maF(lposX),maF(lposY),objektdata.feedratemove);
 		szeile+="M3\n";										//Spindle On, Clockwise
 		
@@ -627,7 +644,7 @@ var akPicToLaser=function(zielID){
 				outPutDoc.innerHTML+="S0\n";//
 				outPutDoc.innerHTML+="G0 X0 Y0\n";//back to start
 				outPutDoc.innerHTML+="M9 ; Coolant Off\n";//
-				outPutDoc.innerHTML+=" ; Dauer ca. "+Math.round(objektdata.dauer+1)+"min \n";//
+				outPutDoc.innerHTML+=" ; Dauer min. "+Math.round(objektdata.dauer+1)+"min \n";//
 				outPutDoc.innerHTML+=" ; end \n";//
 				outPutDoc.style.display="inline-block";	
 				subClass(gE("p_outPutDoc"),"unsichtbar");
