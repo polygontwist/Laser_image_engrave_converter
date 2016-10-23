@@ -14,3 +14,7 @@ my Laser with grbl/arduino on http://www.a-d-k.de/20150611_213938-Lasercutter.ht
 <br>
 mit verschiedenen Einstellungen.
 optimal: F1000, 8%(von 40W)
+
+#### Lasertest 150dpi/300dpi ####
+![image2_bender](https://cloud.githubusercontent.com/assets/3751286/19625959/12359782-9927-11e6-80af-ccdadad53659.jpg)
+300dpi, F500mm/s: 1:30h
