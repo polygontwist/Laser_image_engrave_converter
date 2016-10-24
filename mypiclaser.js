@@ -16,7 +16,7 @@
 
 
 var akPicToLaser=function(zielID){
-	var version="1.4 2016-09-26";
+	var version="1.5 2016-10-24";
 	
 	var ziel;	
  
@@ -93,16 +93,16 @@ var akPicToLaser=function(zielID){
 		feedratemax:2400,
 		feedrateburn:500,		//max:2400  800@8% 1000@8%
 		feedratemove:500,
-		minGrau:180,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
-		Graustufen:255,			//0..255  feine Unterschiede evtl. nicht sichbar, daher reduzieren
+		minGrau:200,			//0..255  alles unter minGrau wird zu 0 (nicht lasern)
+		Graustufen:7,			//0..255  feine Unterschiede evtl. nicht sichbar, daher reduzieren (rastern)
 		width:1,				//mm
 		height:1,
 		unit:"mm",
-		Dlaser:0.125,//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi, sonst Überlappung
-		dpi:150,		 //Punkte pro Zoll = Punkte pro 2,54cm
+		Dlaser:0.125,			//Laserdurchmesser in mm  --> minimaler Zeilenabstand -->max 203,2dpi, sonst Überlappung
+		dpi:150,				 //Punkte pro Zoll = Punkte pro 2,54cm
 		
 		yspezialmove:true,
-		timekorr:2.0,
+		timekorr:2.0,			//TODO: /---\
 		
 		dauer:0,
 		//objektdata:false,
@@ -308,9 +308,17 @@ var akPicToLaser=function(zielID){
 			objektdata.minGrau=this.value;
 			setNewSize();
 		}
+		html.onkeyup=function(e){
+			objektdata.minGrau=this.value;
+			setNewSize();
+		}
 		cE(p,"br");
 		html=createSlider(p,"Graustufen (fein): ",1,255,1,objektdata.Graustufen);
 		html.onchange=function(e){
+			objektdata.Graustufen=this.value;
+			setNewSize();
+		}
+		html.onkeyup=function(e){
 			objektdata.Graustufen=this.value;
 			setNewSize();
 		}
@@ -382,7 +390,7 @@ var akPicToLaser=function(zielID){
 		addClass(pauseButt,"unsichtbar");
 		
 	}
-	
+
 
 	var preWorkPicture=function(){		
 		var c,cc,bb,hh,imgd,pix,v,r,g,b,alpha,d,x,y,e,gg;
@@ -411,11 +419,11 @@ var akPicToLaser=function(zielID){
 				g=pix[d+1];
 				b=pix[d+2];
 				
-				if(objektdata.Graustufen<255){//auf xx Stufen reduzieren
-					gg=255-objektdata.Graustufen;
-					r=Math.round(Math.round(r/gg)*gg); 
-					g=Math.round(Math.round(g/gg)*gg);
-					b=Math.round(Math.round(b/gg)*gg);
+				if(objektdata.Graustufen<255){//auf xx Stufen rastern
+					gg=255/objektdata.Graustufen;
+					r=Math.min ( Math.round(Math.round( r/gg )*gg) ,255 );
+					g=Math.min ( Math.round(Math.round( g/gg )*gg) ,255 );
+					b=Math.min ( Math.round(Math.round( b/gg )*gg) ,255 );
 				}
 				
 				alpha=pix[d+3];
