@@ -16,7 +16,7 @@
 
 
 var akPicToLaser=function(zielID){
-	var version="1.5 2016-10-24";
+	var version="1.6 2016-12-17";
 	
 	var ziel;	
  
@@ -87,6 +87,8 @@ var akPicToLaser=function(zielID){
 	var input_FeedBurn=undefined;
 	var input_FeedMove=undefined;
 	var input_DPI=undefined;
+	
+	var input_showzielsize=undefined;
  
 	var objektdata={
 		feedratemin:100,
@@ -337,6 +339,11 @@ var akPicToLaser=function(zielID){
 		cE(p,"br");		
 		outputcanvas=cE(p,"canvas","outputcanvas");
 		
+		input_showzielsize=createCeckBox(p,"in Zielgröße anzeigen (Beta)",false);
+		input_showzielsize.onchange=function(){
+			showZielsize(this.checked);
+		}
+		
 		p=cE(ziel,"p","p_makebutt","unsichtbar");
 		makeButt=cE(p,"a","makeButt","button bgreen unsichtbar","konvertiere");
 		makeButt.href="#";
@@ -355,6 +362,16 @@ var akPicToLaser=function(zielID){
 		outPutDoc=cE(p,"textarea","outPutDoc","unsichtbar");
 	}
 	
+	var showZielsize=function(an){
+		var dpi=75; //objektdata.dpi
+		var w=(maF(objektdata.width) *dpi/2.54/10) *10/7.9;//10/7.9 = korrektur
+		if(an){
+			outputcanvas.style.width= w+"px";
+		}
+		else{
+			outputcanvas.style.width="auto";
+		}
+	}
 	
 	var loadImage=function(ifile){
 		inputimage.src = URL.createObjectURL(ifile);
@@ -377,6 +394,7 @@ var akPicToLaser=function(zielID){
 				
 		
 		preWorkPicture();
+		
 	}
 	
  	var setNewSize=function(e){
@@ -389,6 +407,7 @@ var akPicToLaser=function(zielID){
 		subClass(makeButt,"unsichtbar");
 		addClass(pauseButt,"unsichtbar");
 		
+		showZielsize(input_showzielsize.checked);
 	}
 
 
