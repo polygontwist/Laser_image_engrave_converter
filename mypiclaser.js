@@ -18,6 +18,7 @@
 
 
 var akPicToLaser=function(zielID){
+	var version="1.7 2017-05-03";
 	
 	var ziel;	
  
