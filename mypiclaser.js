@@ -12,11 +12,12 @@
 	150dpi testen (OK @800mm/s)
 	300dpi testen (OK @500mm/s)
 	300dpi testen (OK @800mm/s)
+	
+	TODO:Worker 
 */
 
 
 var akPicToLaser=function(zielID){
-	var version="1.6 2016-12-17";
 	
 	var ziel;	
  
@@ -620,6 +621,8 @@ var akPicToLaser=function(zielID){
 				lastbefehl+=" S"+Math.floor(1000-(1000/255*lastpixel))+"\n";	//Set Spindle Speed/Intensität
 			
 				if( x==(c.width-1) ){//leerfahrten am Ende entfernen
+					
+
 					if(lastpixel<255){
 						szeile+=lastbefehl;
 						calcDauer(maF(lposX),maF(lposY),frb);
@@ -640,10 +643,11 @@ var akPicToLaser=function(zielID){
 			
 			lposX+=stepX;				
 		}
+		
 		szeile+="M5\n"; //Spindle Off
 		
 		//wenn Zeile =0 dann gleich zur nächsten
- 		if(valuecount>1 && minblack<255){//keine Leerzeilen erzeugen
+ 		if(valuecount>0 && minblack<255){//keine Leerzeilen erzeugen
 			outPutDoc.innerHTML+=szeile;
 			
 			setPixel(c,0,zeile, 255,0,0,255);
