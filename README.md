@@ -3,7 +3,7 @@ generate gcode from jpeg, png, bmp, gif with JavaScript
 
 my Laser with grbl/arduino on http://www.a-d-k.de/20150611_213938-Lasercutter.htm
 
-ausprobieren: https://rawgit.com/polygontwist/Laser_image_engrave_converter/master/index.htm
+ausprobieren: http://polygontwist.github.io/Laser_image_engrave_converter/index.htm
 
 #### my Picture (24x24mm²) ####
 ![](https://cloud.githubusercontent.com/assets/3751286/10120507/335d9616-64bd-11e5-97c4-467d5f5e6e8b.jpg)
